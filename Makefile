@@ -7,4 +7,7 @@ run_api:
 run_simulador:
 	python simulator/simulator.py
 
-	
+install_dependences:
+	virtualenv my-env
+	source my-env/bin/activate
+	pip install -r requirements.txt
