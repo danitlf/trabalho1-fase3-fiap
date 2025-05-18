@@ -10,7 +10,7 @@
 Previsão de Falhas em Equipamentos Industriais com Sensores e IA
 
 ## Nome do grupo
-Rumo ao NEXT
+Rumo ao NEXT!
 
 ## 👨‍🎓 Integrantes: 
 
