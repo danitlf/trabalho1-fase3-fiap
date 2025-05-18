@@ -32,10 +32,18 @@ Rumo ao NEXT
 
 ## 📜 Descrição
 
-Este repositório contém o código-fonte do sensor inteligente baseado em ESP32 utilizado no projeto acadêmico **FarmTech Solutions**.  
-O objetivo é monitorar variáveis agronômicas (pH estimado por LDR, temperatura, umidade relativa, níveis simulados de Fósforo e Potássio) e decidir, em tempo real, quando acionar a bomba de irrigação.  
+Este repositório contém o código-fonte do sensor inteligente baseado em ESP32 utilizado no projeto acadêmico FarmTech Solutions.
+O objetivo é monitorar variáveis agronômicas — como pH estimado por LDR, temperatura, umidade relativa, além de níveis simulados de fósforo e potássio — e decidir, em tempo real, quando acionar a bomba de irrigação para otimizar o uso de água.
 
-Os dados coletados são enviados por HTTP POST em formato JSON para um Web Service, permitindo armazenamento em banco de dados e análises posteriores.
+Os dados coletados pelo sensor são enviados via HTTP POST em formato JSON para um Web Service, que permite o armazenamento em banco de dados e análises posteriores.
+
+Para suportar esse fluxo, uma API desenvolvida em Flask recebe e armazena as leituras dos sensores, disponibilizando-as para consulta. Um módulo simula a geração periódica de dados sintéticos, replicando as medições reais, enviando-os automaticamente para a API.
+
+As leituras coletadas são persistidas em um banco de dados SQLite, que registra o sensor, tipo de variável, valor e timestamp da coleta.
+
+Além disso, uma interface interativa em Streamlit apresenta gráficos temporais das variáveis monitoradas — pH, temperatura, umidade, fósforo e potássio —, com filtros por intervalo de datas para análise detalhada.
+
+Esse sistema integrado oferece uma solução completa para aquisição, armazenamento e monitoramento em tempo real de dados agronômicos, facilitando a tomada de decisões inteligentes na irrigação.
 
 ## Resumo do Circuito
 - **DHT22** — pino 19; use resistor de pull-up de 10 kΩ entre DATA e 3 V3.  
