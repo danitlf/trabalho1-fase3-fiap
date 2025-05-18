@@ -93,9 +93,13 @@ Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
 5. Compile e grave no ESP32.
 6. Abra o Monitor Serial a 115200 baud para observar os logs.
 
-## 📁 Estrutura de pastas
+📁 Estrutura de pastas
+```
+```
 ├── src/
-│   └── farmtech_sensor.ino   ← código principal
+│ └── farmtech_sensor.ino ← código principal
 ├── docs/
-│   └── circuito_fritzing.png ← diagrama ilustrativo
-└── README.md                 ← este arquivo
+│ └── circuito_fritzing.png ← diagrama ilustrativo
+└── README.md ← este arquivo
+```
+```
