@@ -55,7 +55,7 @@ Esse sistema integrado oferece uma solução completa para aquisição, armazena
 
 ## Arquitetura do circuito feito no worki.com
 
-<image src="circuito.png" alt="Circuito do projeto" width="100%" height="100%">
+<image src="assets/circuito.png" alt="Circuito do projeto" width="100%" height="100%">
   
 
   > Observação: o pH é simulado a partir da intensidade luminosa do LDR apenas para fins didáticos.  
