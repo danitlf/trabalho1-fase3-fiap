@@ -45,6 +45,11 @@ Os dados coletados são enviados por HTTP POST em formato JSON para um Web Servi
 - **Relé da bomba** — pino 12; nível alto liga a bomba.  
 - **Alimentação** — ESP32 DevKit v1 alimentado por 5 V USB; GND comum entre todos os componentes.
 
+## Arquitetura do circuito feito no worki.com
+
+<image src="circuito.png" alt="Circuito do projeto" width="100%" height="100%">
+  
+
   > Observação: o pH é simulado a partir da intensidade luminosa do LDR apenas para fins didáticos.  
 
 ## Dependências de Software
