@@ -192,18 +192,23 @@ python main.py
 ## 📁 Estrutura de pastas
 ```
 FarmTech-Solutions/
-├── assets/                   # Arquivos estáticos (imagens, diagramas, logos)
-├── simulator/                # Simulador de dados e API Flask
-│   ├── app.py                # API Flask (rotas e lógica do servidor)
-│   ├── data_sender.py        # Script para gerar dados sintéticos e enviar à API
-│   ├── requirements.txt      # Dependências Python (Flask, SQLAlchemy, etc.)
-│   └── venv/                 # Ambiente virtual (gerado localmente)
-├── src/                      # Código-fonte do firmware (ESP32)
-│   └── farmtech_sensor.ino   # Sketch Arduino para o sensor ESP32
-├── main.py                   # Script de ingestão de dados (API → SQLite)
-├── dashboard.py              # Dashboard interativo (Streamlit)
-├── teste.db                  # Banco de dados SQLite (gerado automaticamente)
-└── README.md                 # Documentação principal
+├── assets/               # Arquivos estáticos (imagens, diagramas, logos)
+├── simulator/            # Simulador de dados e API Flask
+│ ├── app.py              # API Flask (rotas e lógica do servidor)
+│ ├── data_sender.py      # Script para gerar dados sintéticos e enviar à API
+│ ├── requirements.txt    # Dependências Python (Flask, SQLAlchemy, etc.)
+│ └── venv/               # Ambiente virtual (gerado localmente)
+│
+├── src/                  # Código-fonte principal
+│ ├── firmware/           # Código do dispositivo ESP32
+│ └── farmtech_sensor.ino # Sketch Arduino para o sensor
+│ ├── models.py           # Modelos de banco de dados (SQLAlchemy)
+│ ├── schemas.py          # Schemas Pydantic para validação
+│ └── dashboard.py        # Dashboard interativo (Streamlit)
+│
+├── main.py               # Script de ingestão de dados (API → SQLite)
+├── teste.db              # Banco de dados SQLite (gerado automaticamente)
+└── README.md             # Documentação principal
 ```
 
 ## 📋 Licença
