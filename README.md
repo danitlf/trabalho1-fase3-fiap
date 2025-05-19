@@ -37,7 +37,7 @@ O objetivo é monitorar variáveis agronômicas, como pH estimado por LDR, tempe
 
 Os dados coletados pelo sensor são enviados via HTTP POST em formato JSON para um Web Service, que permite o armazenamento em banco de dados e análises posteriores.
 
-Para suportar esse fluxo, uma API desenvolvida em Flask recebe e armazena as leituras dos sensores, disponibilizando-as para consulta. Um módulo simula a geração periódica de dados sintéticos, replicando as medições reais, enviando-os automaticamente para a API.
+Para suportar esse fluxo, uma API desenvolvida em FastAPI recebe e armazena as leituras dos sensores, disponibilizando-as para consulta. Um módulo simula a geração periódica de dados sintéticos, replicando as medições reais, enviando-os automaticamente para a API.
 
 As leituras coletadas são persistidas em um banco de dados SQLite, que registra o sensor, tipo de variável, valor e timestamp da coleta.
 
@@ -144,7 +144,7 @@ Funcionalidades:
 - Compile e grave no ESP32.
 - Abra o Monitor Serial a 115200 baud para observar os logs.
 - Acesse simulator/ e crie um venv: python3 -m venv venv.
-2. API Flask
+2. Fast API
 - Acesse a pasta do simulador/API: 
 ```
 cd simulator
@@ -161,7 +161,7 @@ pip install -r requirements.txt
 ```
 - Inicie a API:
 ```
-flask run --host=0.0.0.0  # API estará em http://localhost:5000
+fast run --host=0.0.0.0  # API estará em http://localhost:5000
 ```
 4. Simulador de Dados
 - Com a API rodando, execute em outro terminal:
