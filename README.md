@@ -200,8 +200,7 @@ FarmTech-Solutions/
 │ └── venv/               # Ambiente virtual (gerado localmente)
 │
 ├── src/                  # Código-fonte principal
-│ ├── firmware/           # Código do dispositivo ESP32
-│ └── farmtech_sensor.ino # Sketch Arduino para o sensor
+│ ├── farmtech_sensor.ino # Sketch Arduino para o sensor
 │ ├── models.py           # Modelos de banco de dados (SQLAlchemy)
 │ ├── schemas.py          # Schemas Pydantic para validação
 │ └── dashboard.py        # Dashboard interativo (Streamlit)
