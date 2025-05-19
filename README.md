@@ -41,7 +41,7 @@ Para suportar esse fluxo, uma API desenvolvida em Flask recebe e armazena as lei
 
 As leituras coletadas são persistidas em um banco de dados SQLite, que registra o sensor, tipo de variável, valor e timestamp da coleta.
 
-Além disso, uma interface interativa em Streamlit apresenta gráficos temporais das variáveis monitoradas — pH, temperatura, umidade, fósforo e potássio —, com filtros por intervalo de datas para análise detalhada.
+Além disso, uma interface interativa em Streamlit apresenta gráficos temporais das variáveis monitoradas pH, temperatura, umidade, fósforo e potássio , com filtros por intervalo de datas para análise detalhada.
 
 Esse sistema integrado oferece uma solução completa para aquisição, armazenamento e monitoramento em tempo real de dados agronômicos, facilitando a tomada de decisões inteligentes na irrigação.
 
