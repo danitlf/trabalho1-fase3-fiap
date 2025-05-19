@@ -99,7 +99,7 @@ Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
 
 1. **Sensor ESP32**
 - Código do dispositivo ESP32
-- 
+
 2. **API REST** (`main.py`)
    - **POST /readings:** armazena nova leitura.
    - **GET /readings:** lista todas as leituras.
