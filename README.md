@@ -68,7 +68,7 @@ Esse sistema integrado oferece uma solução completa para aquisição, armazena
 
 Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
 
-## Lógica de Controle (Fluxo Resumido)
+## Lógica de Controle
 1. **Inicialização**  
    - Configura pinos dos sensores, botões e relé.  
    - Conecta-se à rede Wi-Fi de testes `Wokwi-GUEST`.  
@@ -91,22 +91,73 @@ Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
 
 5. **Envio Web**  
    - Forma JSON com campos `sensor`, `item`, `valor`, `timestamp`.  
-   - Envia via HTTP POST e exibe código de resposta.  
+   - Envia via HTTP POST e exibe código de resposta.
+  
+## 🔄 Fluxo de Dados
+
+1. **Sensor ESP32**
+
+2. **API REST** (`main.py`)
+   - **POST /readings:** armazena nova leitura.
+   - **GET /readings:** lista todas as leituras.
+   - **PUT /readings/<id>:** atualiza leitura.
+   - **DELETE /readings/<id>:** remove leitura.
+
+3. **Simulador** (`simulator/data_sender.py`)
+   - A cada segundo, busca sensores na API.
+   - Gera valor aleatório conforme tipo (temperatura, umidade, pH etc.).
+   - Envia leitura simulada à API.
+
+4. **Armazenamento**
+   - `main.py` também grava todas as leituras no SQLite (`teste.db`), tabela `readings(sensor, item, valor, timestamp)`.
+
+5. **Dashboard Interativo** (`dashboard.py`)
+   - Aplicação totalmente interativa em Streamlit, permitindo exploração dinâmica dos dados.
+   - Cria gráficos de séries temporais para pH, temperatura, umidade, fósforo e potássio.
+   - Oferece filtros em tempo real por intervalo de datas e outras variáveis para análises customizadas.
+   - Permite exportar visualizações ou dados brutos para uso externo.
 
 ## 🔧 Como executar o código
 1. Clone o repositório
-2. Abra `farmtech_sensor.ino` na Arduino IDE (>= 2.3) ou use PlatformIO.
-3. Selecione a placa _ESP32 Dev Module_.
-4. Ajuste as credenciais Wi-Fi e o endpoint HTTP no início do arquivo.
-5. Compile e grave no ESP32.
-6. Abra o Monitor Serial a 115200 baud para observar os logs.
+- Abra `farmtech_sensor.ino` na Arduino IDE (>= 2.3) ou use PlatformIO.
+- Selecione a placa _ESP32 Dev Module_.
+- Ajuste as credenciais Wi-Fi e o endpoint HTTP no início do arquivo.
+- Compile e grave no ESP32.
+- Abra o Monitor Serial a 115200 baud para observar os logs.
+- Acesse simulator/ e crie um venv: python3 -m venv venv.
+2. API Flask
+- Acesse a pasta do simulador/API: cd simulator\
+- Crie e ative o ambiente virtual:
+
+5. Dashboard Streamlit (Visualização)
+Volte à pasta raiz e ative o ambiente virtual:
+```
+cd ..
+source simulator/venv/bin/activate  # Usa o mesmo venv da API
+```
+Instale o Streamlit:
+```
+pip install streamlit pandas plotly
+```
+Inicie o dashboard:
+```
+streamlit run dashboard.py
+```
 
 ## 📁 Estrutura de pastas
 ```
-├── src/  
-│   └── farmtech_sensor.ino   ← código principal  
-├── docs/  
-│   └── circuito_fritzing.png ← diagrama ilustrativo  
-└── README.md                 ← este arquivo  
+FarmTech-Solutions/
+├── assets/                   # Arquivos estáticos (imagens, diagramas, logos)
+├── simulator/                # Simulador de dados e API Flask
+│   ├── app.py                # API Flask (rotas e lógica do servidor)
+│   ├── data_sender.py        # Script para gerar dados sintéticos e enviar à API
+│   ├── requirements.txt      # Dependências Python (Flask, SQLAlchemy, etc.)
+│   └── venv/                 # Ambiente virtual (gerado localmente)
+├── src/                      # Código-fonte do firmware (ESP32)
+│   └── farmtech_sensor.ino   # Sketch Arduino para o sensor ESP32
+├── main.py                   # Script de ingestão de dados (API → SQLite)
+├── dashboard.py              # Dashboard interativo (Streamlit)
+├── teste.db                  # Banco de dados SQLite (gerado automaticamente)
+└── README.md                 # Documentação principal
 ```  
 
