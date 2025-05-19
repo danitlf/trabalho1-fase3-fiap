@@ -95,7 +95,7 @@ Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
   
 ## 🔄 Fluxo de Dados
 
-<image src="sistema.png" alt="Fluxo de dados" width="100%" height="100%">
+<image src="assets/sistema.png" alt="Fluxo de dados" width="100%" height="100%">
 
 1. **Sensor ESP32**
 
