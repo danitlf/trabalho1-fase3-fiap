@@ -126,10 +126,30 @@ Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
 - Abra o Monitor Serial a 115200 baud para observar os logs.
 - Acesse simulator/ e crie um venv: python3 -m venv venv.
 2. API Flask
-- Acesse a pasta do simulador/API: cd simulator\
-- Crie e ative o ambiente virtual:
-
-5. Dashboard Streamlit (Visualização)
+Acesse a pasta do simulador/API: 
+```
+cd simulator
+```
+Crie e ative o ambiente virtual:
+```
+python3 -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+```
+Instale as dependências:
+```
+pip install -r requirements.txt
+```
+Inicie a API:
+```
+flask run --host=0.0.0.0  # API estará em http://localhost:5000
+```
+4.Simulador de Dados
+Com a API rodando, execute em outro terminal:
+```
+python data_sender.py
+```
+5. Dashboard Streamlit
 Volte à pasta raiz e ative o ambiente virtual:
 ```
 cd ..
@@ -143,6 +163,13 @@ Inicie o dashboard:
 ```
 streamlit run dashboard.py
 ```
+Acesse http://localhost:8501 no navegador.
+6. Ingestão de Dados em SQLite 
+Execute para popular o banco de dados:
+```
+python main.py
+```
+Consulta a API e salva leituras em teste.db.
 
 ## 📁 Estrutura de pastas
 ```
