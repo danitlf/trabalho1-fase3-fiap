@@ -112,13 +112,7 @@ Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
 
 4. **Armazenamento**
    - `main.py` também grava todas as leituras no SQLite (`teste.db`), tabela `readings(sensor, item, valor, timestamp)`.
-
-5. **Dashboard Interativo** (`dashboard.py`)
-Funcionalidades:
-- Gráficos temporais personalizáveis
-- Alertas para valores críticos (ex: pH < 5.5)
-- Exportação de relatórios em CSV
-6. Armazenamento: Persistência em SQLite com schema:
+   - Persistência em SQLite com schema:
 
 sql
 ```
@@ -133,6 +127,13 @@ CREATE TABLE readings (
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
+5. **Dashboard Interativo** (`dashboard.py`)
+Funcionalidades:
+- Gráficos temporais personalizáveis
+- Alertas para valores críticos (ex: pH < 5.5)
+- Exportação de relatórios em CSV
+
 ## 🔧 Como executar o código
 1. Clone o repositório
 - Abra `farmtech_sensor.ino` na Arduino IDE (>= 2.3) ou use PlatformIO.
