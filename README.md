@@ -114,11 +114,25 @@ Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
    - `main.py` também grava todas as leituras no SQLite (`teste.db`), tabela `readings(sensor, item, valor, timestamp)`.
 
 5. **Dashboard Interativo** (`dashboard.py`)
-   - Aplicação totalmente interativa em Streamlit, permitindo exploração dinâmica dos dados.
-   - Cria gráficos de séries temporais para pH, temperatura, umidade, fósforo e potássio.
-   - Oferece filtros em tempo real por intervalo de datas e outras variáveis para análises customizadas.
-   - Permite exportar visualizações ou dados brutos para uso externo.
+Funcionalidades:
+- Gráficos temporais personalizáveis
+- Alertas para valores críticos (ex: pH < 5.5)
+- Exportação de relatórios em CSV
+6. Armazenamento: Persistência em SQLite com schema:
 
+sql
+```
+CREATE TABLE readings (
+    id INTEGER PRIMARY KEY,
+    sensor TEXT,
+    temperatura REAL,
+    umidade REAL,
+    ph REAL,
+    fosforo INTEGER,
+    potassio INTEGER,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
 ## 🔧 Como executar o código
 1. Clone o repositório
 - Abra `farmtech_sensor.ino` na Arduino IDE (>= 2.3) ou use PlatformIO.
