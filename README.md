@@ -33,7 +33,7 @@ Rumo ao NEXT!
 ## 📜 Descrição
 
 Este repositório contém o código-fonte do sensor inteligente baseado em ESP32 utilizado no projeto acadêmico FarmTech Solutions.
-O objetivo é monitorar variáveis agronômicas — como pH estimado por LDR, temperatura, umidade relativa, além de níveis simulados de fósforo e potássio — e decidir, em tempo real, quando acionar a bomba de irrigação para otimizar o uso de água.
+O objetivo é monitorar variáveis agronômicas, como pH estimado por LDR, temperatura, umidade relativa, além de níveis simulados de fósforo e potássio; e decidir, em tempo real, quando acionar a bomba de irrigação para otimizar o uso de água.
 
 Os dados coletados pelo sensor são enviados via HTTP POST em formato JSON para um Web Service, que permite o armazenamento em banco de dados e análises posteriores.
 
@@ -98,7 +98,8 @@ Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
 <image src="assets/sistema.png" alt="Fluxo de dados" width="100%" height="100%">
 
 1. **Sensor ESP32**
-
+- Código do dispositivo ESP32
+- 
 2. **API REST** (`main.py`)
    - **POST /readings:** armazena nova leitura.
    - **GET /readings:** lista todas as leituras.
