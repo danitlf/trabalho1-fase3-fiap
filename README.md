@@ -131,6 +131,7 @@ CREATE TABLE readings (
 
 5. **Dashboard Interativo** (`dashboard.py`)
 Funcionalidades:
+- Feita com Streamlit
 - Gráficos temporais personalizáveis
 - Alertas para valores críticos (ex: pH < 5.5)
 - Exportação de relatórios em CSV
