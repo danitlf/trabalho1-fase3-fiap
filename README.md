@@ -43,7 +43,28 @@ As leituras coletadas são persistidas em um banco de dados, que registra o sens
 
 Por fim, Este projeto simula e exibe dados de sensores em tempo real. Ele é composto por uma API desenvolvida com FastAPI, que gerencia sensores e leituras armazenadas em um banco SQLite. Um simulador cria automaticamente os sensores (caso não existam) e envia leituras continuamente. Para a visualização, foi criado um dashboard em Streamlit que exibe os dados em tempo real de forma simples e interativa.
 
-## Resumo do Circuito
+  ## 🔌 1. Simulador de Circuito – Wokwi (ESP32)
+
+- **Conecta-se ao WiFi** automaticamente (`Wokwi-GUEST`).
+- **Envio Web**  
+   - Forma JSON com campos `sensor`, `item`, `valor`, `timestamp`.  
+   - Envia via HTTP POST e exibe código de resposta.
+- **Configura sensores e atuadores**:
+  - **Sensor DHT22** (temperatura e umidade).
+  - **LDR** (simula valor de pH com inversão).
+  - **Botões** para simular **níveis de potássio** e **fósforo**.
+  - **Relé** para simular acionamento de bomba.
+- Coleta os dados a cada 5 segundos:
+  - Temperatura, umidade, pH (via LDR), fósforo e potássio.
+- **Regras de acionamento do relé**:
+  - Aciona bomba se:
+    - pH > 9
+    - Temperatura > 30 °C
+    - Umidade < 50%
+- **Envia os dados coletados em JSON para uma API externa**.
+- Também imprime no terminal serial os dados com timestamp formatado.
+
+  ## Resumo do Circuito
 - **DHT22** — pino 19; use resistor de pull-up de 10 kΩ entre DATA e 3 V3.  
 - **LDR** — pino 34 (ADC1_CH6); formar divisor com resistor de 10 kΩ.  
 - **Botão “Fósforo”** — pino 23; configurado como `INPUT_PULLUP`.  
@@ -54,159 +75,122 @@ Por fim, Este projeto simula e exibe dados de sensores em tempo real. Ele é com
 ## Arquitetura do circuito feito no worki.com
 
 <image src="assets/circuito.png" alt="Circuito do projeto" width="100%" height="100%">
-  
 
-  > Observação: o pH é simulado a partir da intensidade luminosa do LDR apenas para fins didáticos.  
+## 🚀 2. API – FastAPI
 
-## Dependências de Software
-- **ESP32-Arduino Core** 2.0.x (Wi-Fi, HTTPClient, gerenciamento de tempo)  
-- **DHT sensor library** 1.4.x  
-- **ArduinoJson** 6.21 ou superior  
-- **ctime / time.h** (biblioteca padrão)  
-
-Instale as bibliotecas via Arduino IDE ou configure em `platformio.ini`.
-
-## Lógica de Controle
-1. **Inicialização**  
-   - Configura pinos dos sensores, botões e relé.  
-   - Conecta-se à rede Wi-Fi de testes `Wokwi-GUEST`.  
-   - Ajusta o RTC interno com data/hora fixa para demonstração.  
-
-2. **Leitura de Botões**  
-   - Pressionar o botão de Fósforo ou Potássio gera valor aleatório entre 10 e 100 e envia imediatamente ao Web Service.  
-
-3. **Coleta Periódica** (a cada 5 s)  
-   - pH estimado é calculado a partir do LDR (`map(0-4095 → 14-0)`).  
-   - Temperatura e umidade são lidas do DHT22.  
-   - Valores são enviados e registrados no monitor serial.  
-
-4. **Acionamento da Irrigação**  
-   - A bomba é ligada se **todas** as condições forem verdadeiras:  
-     - pH > 9  
-     - temperatura > 30 °C  
-     - umidade < 50 %  
-   - Caso contrário, o relé permanece desligado.  
-
-5. **Envio Web**  
-   - Forma JSON com campos `sensor`, `item`, `valor`, `timestamp`.  
-   - Envia via HTTP POST e exibe código de resposta.
-  
-## 🔄 Fluxo de Dados
-
-<image src="assets/sistema.png" alt="Fluxo de dados" width="100%" height="100%">
-
-1. **Sensor ESP32**
-- Código do dispositivo ESP32
-
-2. **API REST** (`main.py`)
+**API REST** (`main.py`)
    - **POST /readings:** armazena nova leitura.
    - **GET /readings:** lista todas as leituras.
    - **PUT /readings/<id>:** atualiza leitura.
    - **DELETE /readings/<id>:** remove leitura.
 
-3. **Simulador** (`simulator/data_sender.py`)
-   - A cada segundo, busca sensores na API.
-   - Gera valor aleatório conforme tipo (temperatura, umidade, pH etc.).
-   - Envia leitura simulada à API.
+- A API está implementada no arquivo `main.py`, e utiliza os arquivos `models.py` e `schemas.py` (dentro da pasta `src/`) para estruturar os dados e validações.
+- Ela gerencia duas entidades principais:
+  - **Sensores**: identificados por nome, tipo e local.
+  - **Leituras**: registros dos valores capturados pelos sensores.
+- Os dados são armazenados localmente em um banco de dados **SQLite**, no arquivo `banco.db`.
 
-4. **Armazenamento**
-   - `main.py` também grava todas as leituras no SQLite (`teste.db`), tabela `readings(sensor, item, valor, timestamp)`.
-   - Persistência em SQLite com schema:
+## 🧪 3. Simulador – Geração de Dados
 
-sql
-```
-CREATE TABLE readings (
-    id INTEGER PRIMARY KEY,
-    sensor TEXT,
-    temperatura REAL,
-    umidade REAL,
-    ph REAL,
-    fosforo INTEGER,
-    potassio INTEGER,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
+- O simulador está no arquivo `simulator/simulator.py`.
+- O papel dele é simular sensores reais, gerando dados de forma contínua.
+- Quando o simulador é iniciado, **ele verifica se os sensores já existem no banco de dados**:
+  - Se **não existirem**, ele os **cria automaticamente** usando uma função dedicada.
+- Em seguida, entra em um loop `while True`:
+  - Envia leituras simuladas para cada sensor periodicamente.
+  - Isso permite alimentar o banco de dados com dados "em tempo real".
+ 
+  ## 📊 3. Dashboard – Visualização com Streamlit
 
-5. **Dashboard Interativo** (`dashboard.py`)
-Funcionalidades:
-- Feita com Streamlit
-- Gráficos temporais personalizáveis
-- Alertas para valores críticos (ex: pH < 5.5)
-- Exportação de relatórios em CSV
+- O dashboard está no arquivo `dashboard.py`.
+- Desenvolvido com **Streamlit**, ele oferece uma interface web interativa para visualização dos dados coletados.
+- É possível:
+  - Ver os dados dos sensores em tempo real.
+  - Aplicar filtros e analisar diferentes métricas.
+
+## 🔄 Fluxo de Dados
+
+<image src="assets/sistema.png" alt="Fluxo de dados" width="100%" height="100%">
 
 ## 🔧 Como executar o código
+Para executar o código deste projeto, siga os passos abaixo:
+
+Pré-requisitos:
+- Python 3.8+ instalado
+- Virtualenv
+```
+  pip install virtualenv
+```
+
 1. Clone o repositório
-- Abra `farmtech_sensor.ino` na Arduino IDE (>= 2.3) ou use PlatformIO.
-- Selecione a placa _ESP32 Dev Module_.
-- Ajuste as credenciais Wi-Fi e o endpoint HTTP no início do arquivo.
-- Compile e grave no ESP32.
-- Abra o Monitor Serial a 115200 baud para observar os logs.
-- Acesse simulator/ e crie um venv: python3 -m venv venv.
-2. Fast API
-- Acesse a pasta do simulador/API: 
+- A pasta `wokwi/` contém os arquivos do circuito virtual que simula um **ESP32** com sensores conectados.
+- O circuito pode ser simulado diretamente no site [https://wokwi.com](https://wokwi.com), bastando importar os arquivos presente na pasta `/worki`:
+
+-Certifique-se de que o ESP32 esteja conectado ao WiFi (Wokwi-GUEST)
+
+O sketch irá:
+- Coletar dados dos sensores (DHT, LDR, botões)
+- Acionar o relé com base em condições
+- Enviar os dados via HTTP para o WebService 
+
+2. Crie e ative o ambiente virtual
 ```
-cd simulator
+virtualenv my-env
+source my-env/bin/activate    # No Windows: my-env\Scripts\activate
 ```
-- Crie e ative o ambiente virtual:
-```
-python3 -m venv venv
-source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate     # Windows
-```
-- Instale as dependências:
+
+3. Instalar dependências do projeto
 ```
 pip install -r requirements.txt
 ```
-- Inicie a API:
+4. Banco de Dados
+O projeto utiliza SQLite.
+- Certifique-se de que o arquivo banco.db esteja na raiz do projeto.
+- Ele já deve conter as tabelas necessárias para sensores e leituras.
+
+5. Execute os componentes do sistema com os comandos presentes no `Makefile`
+▶️ API (FastAPI)
 ```
-fast run --host=0.0.0.0  # API estará em http://localhost:5000
+uvicorn main:app --reload
 ```
-4. Simulador de Dados
-- Com a API rodando, execute em outro terminal:
+- Isso iniciará a API na URL: http://127.0.0.1:8000/docs
+
+▶️ Simulador de Sensores
 ```
-python data_sender.py
+python simulator/simulator.py
 ```
-5. Dashboard Streamlit
-- Volte à pasta raiz e ative o ambiente virtual:
-```
-cd ..
-source simulator/venv/bin/activate  # Usa o mesmo venv da API
-```
-- Instale o Streamlit:
-```
-pip install streamlit pandas plotly
-```
-- Inicie o dashboard:
+
+▶️ Dashboard (Streamlit)
 ```
 streamlit run dashboard.py
 ```
-- Acesse http://localhost:8501 no navegador.
-6. Ingestão de Dados em SQLite 
-- Execute para popular o banco de dados:
-```
-python main.py
-```
-- Consulta a API e salva leituras em teste.db.
 
 ## 📁 Estrutura de pastas
 ```
-FarmTech-Solutions/
-├── assets/               # Arquivos estáticos (imagens, diagramas, logos)
-├── simulator/            # Simulador de dados e API Flask
-│ ├── app.py              # API Flask (rotas e lógica do servidor)
-│ ├── data_sender.py      # Script para gerar dados sintéticos e enviar à API
-│ ├── requirements.txt    # Dependências Python (Flask, SQLAlchemy, etc.)
-│ └── venv/               # Ambiente virtual (gerado localmente)
+trabalho1-fase3-fiap/
+├── assets/                      # Pasta para imagens e arquivos de mídia
 │
-├── src/                  # Código-fonte principal
-│ ├── farmtech_sensor.ino # Sketch Arduino para o sensor
-│ ├── models.py           # Modelos de banco de dados (SQLAlchemy)
-│ ├── schemas.py          # Schemas Pydantic para validação
-│ └── dashboard.py        # Dashboard interativo (Streamlit)
+├── simulator/                   
+│   └── simulator.py             # Simulador: cria os sensores e gera valores continuos para abastecer o banco de dados
 │
-├── main.py               # Script de ingestão de dados (API → SQLite)
-├── teste.db              # Banco de dados SQLite (gerado automaticamente)
-└── README.md             # Documentação principal
+├── src/                         # Código da API FastAPI
+│   ├── models.py                # API para gerenciar duas entidades principais: sensores e leituras.
+│   └── schemas.py               # Esquemas (Pydantic) para validação dos dados
+│
+├── wokwi/                       # Arquivos do simulador Wokwi (ESP32)
+│   ├── diagram.json             # Diagrama do circuito
+│   ├── libraries.txt            # Bibliotecas necessárias
+│   ├── sketch.ino               # Código da simulação (Arduino)
+│   └── wokwi-project.txt        # Configuração do projeto Wokwi
+│
+├── .gitignore                   # Arquivos e pastas ignorados pelo Git
+├── Makefile                     # Comandos utilitários para automatizar tarefas
+├── README.md                    # Documentação do projeto
+├── banco.db                     # Banco de dados SQLite
+├── dashboard.py                 # Dashboard em Streamlit
+├── main.py                      # Arquivo principal para rodar a API
+└── requirements.txt             # Lista de dependências do projeto
+
 ```
 
 ## 📋 Licença
