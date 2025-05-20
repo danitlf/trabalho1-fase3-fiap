@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "author": "Felipe Livino",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": -134.4,
+      "left": -129.56,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn1",
+      "top": -107.8,
+      "left": 134.4,
+      "attrs": { "color": "yellow", "label": "Potássio (K)" }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn2",
+      "top": -11.8,
+      "left": 105.6,
+      "attrs": { "color": "black", "label": "Fósforo (P)" }
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr1",
+      "top": -275.2,
+      "left": -354.4,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": -297.3,
+      "left": -15,
+      "attrs": { "temperature": "54.4", "humidity": "37" }
+    },
+    { "type": "wokwi-relay-module", "id": "relay1", "top": 96.2, "left": -153.6, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "btn2:1.l", "esp:GND.2", "black", [ "h-19.2", "v-28.8" ] ],
+    [ "btn1:1.l", "esp:GND.2", "black", [ "h-38.4", "v-67.2" ] ],
+    [ "btn2:2.l", "esp:23", "red", [ "h-105.6", "v-9.2" ] ],
+    [ "btn1:2.l", "esp:22", "red", [ "h-115.2", "v-28.4" ] ],
+    [ "ldr1:VCC", "esp:3V3", "red", [ "h19.2", "v76.8" ] ],
+    [ "ldr1:AO", "esp:34", "green", [ "h0", "v85.7" ] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "v19.2", "h-28.8", "v28.8" ] ],
+    [ "dht1:VCC", "esp:5V", "red", [ "v9.6", "h-230.4", "v211.2" ] ],
+    [ "dht1:SDA", "esp:19", "gold", [ "v0" ] ],
+    [ "relay1:VCC", "esp:5V", "red", [ "h-48", "v48", "h-115.2", "v9.6" ] ],
+    [ "relay1:IN", "esp:12", "green", [ "h-19.2", "v38.2", "h-163.2", "v-86.4" ] ],
+    [ "ldr1:GND", "esp:GND.1", "black", [ "h19.2", "v230" ] ],
+    [ "relay1:GND", "esp:GND.1", "black", [ "h-38.4", "v38", "h-134.4", "v-67.2" ] ]
+  ],
+  "dependencies": {}
+}
