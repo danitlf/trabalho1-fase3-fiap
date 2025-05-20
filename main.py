@@ -11,7 +11,7 @@ import streamlit as st
 
 import requests
 
-DATABASE_URL = "sqlite:///./teste.db"
+DATABASE_URL = "sqlite:///./banco.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
