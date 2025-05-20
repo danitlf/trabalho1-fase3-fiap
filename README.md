@@ -112,6 +112,36 @@ Por fim, Este projeto simula e exibe dados de sensores em tempo real. Ele é com
 
 <image src="assets/sistema.png" alt="Fluxo de dados" width="100%" height="100%">
 
+
+## 📁 Estrutura de pastas
+```
+trabalho1-fase3-fiap/
+├── assets/                      # Pasta para imagens e arquivos de mídia
+│
+├── simulator/                   
+│   └── simulator.py             # Simulador: cria os sensores e gera valores continuos para abastecer o banco de dados
+│
+├── src/                         # Código da API FastAPI
+│   ├── models.py                # API para gerenciar duas entidades principais: sensores e leituras.
+│   └── schemas.py               # Esquemas (Pydantic) para validação dos dados
+│
+├── wokwi/                       # Arquivos do simulador Wokwi (ESP32)
+│   ├── diagram.json             # Diagrama do circuito
+│   ├── libraries.txt            # Bibliotecas necessárias
+│   ├── sketch.ino               # Código da simulação (Arduino)
+│   └── wokwi-project.txt        # Configuração do projeto Wokwi
+│
+├── .gitignore                   # Arquivos e pastas ignorados pelo Git
+├── Makefile                     # Comandos utilitários para automatizar tarefas
+├── README.md                    # Documentação do projeto
+├── banco.db                     # Banco de dados SQLite
+├── dashboard.py                 # Dashboard em Streamlit
+├── main.py                      # Arquivo principal para rodar a API
+└── requirements.txt             # Lista de dependências do projeto
+
+```
+
+
 ## 🔧 Como executar o código
 Para executar o código deste projeto, siga os passos abaixo:
 
@@ -163,34 +193,6 @@ python simulator/simulator.py
 ▶️ Dashboard (Streamlit)
 ```
 streamlit run dashboard.py
-```
-
-## 📁 Estrutura de pastas
-```
-trabalho1-fase3-fiap/
-├── assets/                      # Pasta para imagens e arquivos de mídia
-│
-├── simulator/                   
-│   └── simulator.py             # Simulador: cria os sensores e gera valores continuos para abastecer o banco de dados
-│
-├── src/                         # Código da API FastAPI
-│   ├── models.py                # API para gerenciar duas entidades principais: sensores e leituras.
-│   └── schemas.py               # Esquemas (Pydantic) para validação dos dados
-│
-├── wokwi/                       # Arquivos do simulador Wokwi (ESP32)
-│   ├── diagram.json             # Diagrama do circuito
-│   ├── libraries.txt            # Bibliotecas necessárias
-│   ├── sketch.ino               # Código da simulação (Arduino)
-│   └── wokwi-project.txt        # Configuração do projeto Wokwi
-│
-├── .gitignore                   # Arquivos e pastas ignorados pelo Git
-├── Makefile                     # Comandos utilitários para automatizar tarefas
-├── README.md                    # Documentação do projeto
-├── banco.db                     # Banco de dados SQLite
-├── dashboard.py                 # Dashboard em Streamlit
-├── main.py                      # Arquivo principal para rodar a API
-└── requirements.txt             # Lista de dependências do projeto
-
 ```
 
 ## 📋 Licença
