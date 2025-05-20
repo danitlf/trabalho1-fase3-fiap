@@ -39,11 +39,9 @@ Os dados coletados pelo sensor são enviados via HTTP POST em formato JSON para 
 
 Para suportar esse fluxo, uma API desenvolvida em FastAPI recebe e armazena as leituras dos sensores, disponibilizando-as para consulta. Um módulo simula a geração periódica de dados sintéticos, replicando as medições reais, enviando-os automaticamente para a API.
 
-As leituras coletadas são persistidas em um banco de dados SQLite, que registra o sensor, tipo de variável, valor e timestamp da coleta.
+As leituras coletadas são persistidas em um banco de dados, que registra o sensor, tipo de variável, valor e timestamp da coleta.
 
-Além disso, uma interface interativa em Streamlit apresenta gráficos temporais das variáveis monitoradas pH, temperatura, umidade, fósforo e potássio , com filtros por intervalo de datas para análise detalhada.
-
-Esse sistema integrado oferece uma solução completa para aquisição, armazenamento e monitoramento em tempo real de dados agronômicos, facilitando a tomada de decisões inteligentes na irrigação.
+Por fim, Este projeto simula e exibe dados de sensores em tempo real. Ele é composto por uma API desenvolvida com FastAPI, que gerencia sensores e leituras armazenadas em um banco SQLite. Um simulador cria automaticamente os sensores (caso não existam) e envia leituras continuamente. Para a visualização, foi criado um dashboard em Streamlit que exibe os dados em tempo real de forma simples e interativa.
 
 ## Resumo do Circuito
 - **DHT22** — pino 19; use resistor de pull-up de 10 kΩ entre DATA e 3 V3.  
