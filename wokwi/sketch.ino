@@ -1,229 +1,250 @@
-#include <DHT.h>
-#include <ctime>
-
-//módulos Wifi
+// --- BIBLIOTECAS OTIMIZADAS ---
 #include <WiFi.h>
-#include <WiFiClient.h>
-#include <WebServer.h>
-#include <uri/UriBraces.h>
-
-//módulos para webservice
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <string>
+#include <LiquidCrystal_I2C.h>
+#include <DHT.h>
 
+// --- CONFIGURAÇÕES DE REDE ---
 #define WIFI_SSID "Wokwi-GUEST"
 #define WIFI_PASSWORD ""
-#define WIFI_CHANNEL 6
+#define RECONNECT_INTERVAL_MS 5000 // Tenta reconectar a cada 5 segundos
 
-//botoes e sensores
-#define botaoFosforo 23    // Pino do botão de Fósforo
-#define botaoPotassio 22     // Pino do botão de Potássio
-#define ldrPino 34              // Pino analógico do LDR
-#define dhtPino 19              // Pino do sensor DHT22
-#define relePino 12            // Pino de controle do relé
-#define intervaloColeta 5000   // Intervalo de coleta em milissegundos (5 segundos)
+// --- PINOS E SENSORES ---
+#define BOTAO_FOSFORO_PINO 23
+#define BOTAO_POTASSIO_PINO 22
+#define LDR_PINO 34
+#define DHT_PINO 19
+#define RELE_PINO 12
+#define DHT_TIPO DHT22
 
-// Inicializa o sensor DHT
-DHT dht(dhtPino, DHT22);  // Pino e tipo de sensor DHT (DHT22)
+// --- INTERVALOS E CONSTANTES ---
+#define INTERVALO_COLETA_MS 5000
+#define JSON_DOC_SIZE 512
+#define LCD_LARGURA 16
+#define LCD_ALTURA 2
 
-unsigned long ultimoTempoColeta = 0; 
-int ultimaLeituraLDR = 0; 
-float pH = 7.0;
-bool releStatus = false;
-String motivoAcionamento = "";
-int id_coleta = 1;
+// --- INICIALIZAÇÃO DOS COMPONENTES ---
+LiquidCrystal_I2C lcd(0x27, LCD_LARGURA, LCD_ALTURA);
+DHT dht(DHT_PINO, DHT_TIPO);
+
+// --- ESTRUTURA PARA PASSAR DADOS PARA A TAREFA WEB ---
+struct SensorDataPayload {
+  int16_t ph_x10;
+  int16_t temperatura_x10;
+  int16_t umidade_x10;
+  int16_t potassio;
+  int16_t fosforo;
+  bool rele_status;
+};
+
+// --- VARIÁVEIS GLOBAIS OTIMIZADAS ---
+unsigned long ultimoTempoColeta = 0;
 int valorPotassio = 0;
 int valorFosforo = 0;
+bool releStatus = false;
+TaskHandle_t tarefaEnvioHandle = NULL;
+TimerHandle_t wifiReconnectTimer;
 
+// Protótipos de Funções
+void conectarWiFi();
+void printToLcd(const char* linha1, const char* linha2);
+void tarefaEnvioWebService(void *parametros);
+void WiFiEvent(WiFiEvent_t event);
 
-class ParametrosEnvio{
-    public: 
-      ParametrosEnvio() : nutriente(nullptr), valor(0.0f) {}
-  
-      ParametrosEnvio(const char* nutri, float value){ // Usar const char* para literais de string
-        nutriente = nutri;
-        valor = value;
-      }
-      const char* getNutriente() const { // Retornar const char* e método const
-        return nutriente;
-      }
-  
-      float getValor() const { // Método const
-        return valor;
-      }
-  
-    private:
-      const char* nutriente; // Armazenar como const char*
-      float valor; // Faltava o ponto e vírgula aqui
-}; 
-
-
-//Passar dados para a API postman
-HTTPClient http; 
 
 void setup() {
   Serial.begin(115200);
-  pinMode(botaoFosforo, INPUT_PULLUP);
-  pinMode(botaoPotassio, INPUT_PULLUP);
-  pinMode(ldrPino, INPUT);
-  pinMode(relePino, OUTPUT); // Configura o pino do relé como saída
 
-  dht.begin();  // Inicializa o sensor DHT
+  wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(RECONNECT_INTERVAL_MS), pdFALSE, (void*)0, [](TimerHandle_t xTimer){ conectarWiFi(); });
 
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL);
-  Serial.print("Conectando ao WiFi ");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(100);
-    Serial.print(".");
-  }
-  Serial.println(" Conectado");
+  pinMode(BOTAO_FOSFORO_PINO, INPUT_PULLUP);
+  pinMode(BOTAO_POTASSIO_PINO, INPUT_PULLUP);
+  pinMode(LDR_PINO, INPUT);
+  pinMode(RELE_PINO, OUTPUT);
+  digitalWrite(RELE_PINO, LOW);
 
-  // Define a data e hora inicial manualmente 
+  dht.begin();
+  lcd.init();
+  lcd.backlight();
+  
+  WiFi.onEvent(WiFiEvent);
+
+  conectarWiFi();
+
   struct tm timeinfo;
-  timeinfo.tm_year = 2025 - 1900; // Ano - 1900
-  timeinfo.tm_mon = 05 - 1;       // Mês (0 = Janeiro)
-  timeinfo.tm_mday = 10;           // Dia do mês
-  timeinfo.tm_hour = 9;           // Hora
-  timeinfo.tm_min = 0;            // Minuto
-  timeinfo.tm_sec = 0;            // Segundo
-
-  // Configura o RTC do ESP32
+  timeinfo.tm_year = 2025 - 1900; timeinfo.tm_mon = 5 - 1; timeinfo.tm_mday = 10;
+  timeinfo.tm_hour = 9; timeinfo.tm_min = 0; timeinfo.tm_sec = 0;
   time_t t = mktime(&timeinfo);
   struct timeval now = { .tv_sec = t };
-  settimeofday(&now, NULL);  
-
+  settimeofday(&now, NULL);
 }
 
 void loop() {
-  //leitura dos sensores
-  int potassiumButtonState = digitalRead(botaoPotassio);
-  int phosphorusButtonState = digitalRead(botaoFosforo);
-  
-  //leitura potassio
-  if (potassiumButtonState == LOW) {
+  if (digitalRead(BOTAO_POTASSIO_PINO) == LOW) {
     valorPotassio = random(10, 101);
-    delay(1000); 
   }
-
-  //leitura Fosforo
-  if (phosphorusButtonState == LOW) {
+  if (digitalRead(BOTAO_FOSFORO_PINO) == LOW) {
     valorFosforo = random(10, 101);
-    delay(1000);
   }
 
-  // Verifica se já passaram 5 segundos desde a última coleta
-  unsigned long tempoAtual = millis();
-  if (tempoAtual - ultimoTempoColeta >= intervaloColeta) {
-    ultimoTempoColeta = tempoAtual; 
+  if (millis() - ultimoTempoColeta >= INTERVALO_COLETA_MS) {
+    ultimoTempoColeta = millis();
 
-    // Leitura do sensor LDR
-    int ldrValue = analogRead(ldrPino);
-    float lightIntensity = map(ldrValue, 0, 4095, 14, 0); 
+    uint8_t valorPhInt = map(analogRead(LDR_PINO), 0, 4095, 140, 0);
+    int16_t tempInt = (int16_t)(dht.readTemperature() * 10);
+    int16_t umidInt = (int16_t)(dht.readHumidity() * 10);
 
-    // Leitura do sensor DHT22 (Temperatura e Umidade)
-    float temperatura = dht.readTemperature();
-    float umidade = dht.readHumidity();
-
-    // Verifica se houve erro na leitura do DHT22
-    if (isnan(temperatura) || isnan(umidade)) {
-      Serial.println("Falha na leitura do DHT22!");
+    if (isnan(tempInt / 10.0) || isnan(umidInt / 10.0)) {
+      Serial.println("Falha na leitura do sensor DHT!");
+      printToLcd("Erro no Sensor", "DHT22 Falhou");
       return;
     }
 
-    printData("pH", lightIntensity);
-    printData("Temperatura", temperatura);
-    printData("Umidade", umidade);
-    
-
-    // Verifica as condições para acionar o rele da bomba
-    // Se PH maior que 9 e Temperatura > 30°C e umidade < 50%
-    // Caso os valores acima estejam válidos é ligada o relé da bomba
-    motivoAcionamento = ""; 
-    if (lightIntensity > 9 && temperatura > 30 && umidade < 50) {
-      releStatus = true;
-      motivoAcionamento = "pH > 9, Temperatura > 30°C e Umidade < 50%";
-      // Aciona o relé
-      digitalWrite(relePino, HIGH); 
-      Serial.println("Relé acionado: pH > 10, Temperatura > 30°C e Umidade < 50%");
+    const char* motivoAcionamento = "";
+    if (valorPhInt > 90 && tempInt > 300 && umidInt < 500) {
+      if (!releStatus) {
+        releStatus = true;
+        digitalWrite(RELE_PINO, HIGH);
+        motivoAcionamento = "Niveis criticos";
+        Serial.println("Rele LIGADO. Motivo: Niveis criticos.");
+        printToLcd("Rele LIGADO", motivoAcionamento);
+      }
     } else {
-      releStatus = false;
-      motivoAcionamento = ""; 
-      // Desliga o relé
-      digitalWrite(relePino, LOW); 
-      Serial.println("Relé desligado");
+      if (releStatus) {
+        releStatus = false;
+        digitalWrite(RELE_PINO, LOW);
+        motivoAcionamento = "";
+        Serial.println("Rele DESLIGADO.");
+        printToLcd("Rele DESLIGADO", "");
+      }
+    }
+    
+    char linha1[LCD_LARGURA + 1];
+    char linha2[LCD_LARGURA + 1];
+    snprintf(linha1, sizeof(linha1), "PH:%.1f T:%.1f", valorPhInt/10.0, tempInt/10.0);
+    snprintf(linha2, sizeof(linha2), "U:%.1f K:%d P:%d", umidInt/10.0, valorPotassio, valorFosforo);
+    if(!releStatus) printToLcd(linha1, linha2);
+
+    SensorDataPayload* payload = new SensorDataPayload{
+      (int16_t)valorPhInt, tempInt, umidInt, (int16_t)valorPotassio, (int16_t)valorFosforo, releStatus
+    };
+    
+    if (tarefaEnvioHandle == NULL || eTaskGetState(tarefaEnvioHandle) == eDeleted) {
+        xTaskCreate(tarefaEnvioWebService, "WebServiceTask", 8192, (void*)payload, 1, &tarefaEnvioHandle);
+    } else {
+        Serial.println("A tarefa de envio anterior ainda esta em execucao. Ignorando novo envio.");
+        delete payload;
+    }
+  }
+}
+
+void conectarWiFi() {
+    Serial.println("Iniciando tentativa de conexao WiFi...");
+    printToLcd("Conectando...", WIFI_SSID);
+    
+    WiFi.disconnect(true); 
+    delay(100);
+    
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+}
+
+void WiFiEvent(WiFiEvent_t event) {
+    Serial.printf("[WiFi Event] evento: %d\n", event);
+
+    switch(event) {
+        case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+            Serial.println("WiFi conectado!");
+            Serial.print("IP: ");
+            Serial.println(WiFi.localIP());
+            printToLcd("Conectado!", WiFi.localIP().toString().c_str());
+            
+            if (xTimerIsTimerActive(wifiReconnectTimer)) {
+                xTimerStop(wifiReconnectTimer, 0);
+            }
+            break;
+
+        case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+            Serial.println("WiFi desconectado. Tentando reconectar...");
+            printToLcd("WiFi Perdido", "Reconectando...");
+            
+            xTimerStart(wifiReconnectTimer, 0);
+            break;
+            
+        default:
+            break;
+    }
+}
+
+void printToLcd(const char* linha1, const char* linha2) {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(linha1);
+  lcd.setCursor(0, 1);
+  lcd.print(linha2);
+}
+
+void tarefaEnvioWebService(void *parametros) {
+  SensorDataPayload* dados = (SensorDataPayload*)parametros;
+
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin("https://newsfacd.herokuapp.com/journeybuilder/success");
+    
+    http.setTimeout(15000);
+    
+    http.addHeader("Content-Type", "application/json");
+
+    StaticJsonDocument<JSON_DOC_SIZE> doc;
+    doc["sensor"] = "ESP32_Otimizado";
+
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo, 1000)) {
+        char timestamp[32];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+        doc["timestamp"] = timestamp;
     }
 
-    const int TIPO_LEITURAS_PROGRAMADAS = 5;
-    ParametrosEnvio leiturasProgramadas[TIPO_LEITURAS_PROGRAMADAS];
+    JsonArray leituras = doc.createNestedArray("leituras");
+    
+    JsonObject phObj = leituras.createNestedObject();
+    phObj["item"] = "pH";
+    phObj["valor"] = dados->ph_x10 / 10.0;
+    
+    JsonObject tempObj = leituras.createNestedObject();
+    tempObj["item"] = "temperatura";
+    tempObj["valor"] = dados->temperatura_x10 / 10.0;
 
-    leiturasProgramadas[0] = ParametrosEnvio("pH", lightIntensity);
-    leiturasProgramadas[1] = ParametrosEnvio("temperatura", temperatura);
-    leiturasProgramadas[2] = ParametrosEnvio("umidade", umidade);
-    leiturasProgramadas[3] = ParametrosEnvio("potássio", valorPotassio);
-    leiturasProgramadas[4] = ParametrosEnvio("fósforo", valorFosforo);
+    JsonObject umidObj = leituras.createNestedObject();
+    umidObj["item"] = "umidade";
+    umidObj["valor"] = dados->umidade_x10 / 10.0;
 
-    callWs(leiturasProgramadas, TIPO_LEITURAS_PROGRAMADAS);
+    JsonObject potassioObj = leituras.createNestedObject();
+    potassioObj["item"] = "potassio";
+    potassioObj["valor"] = dados->potassio;
+
+    JsonObject fosforoObj = leituras.createNestedObject();
+    fosforoObj["item"] = "fosforo";
+    fosforoObj["valor"] = dados->fosforo;
+
+    char httpRequestData[JSON_DOC_SIZE];
+    serializeJson(doc, httpRequestData, sizeof(httpRequestData));
+
+    Serial.println("\n[TAREFA WEB] Enviando JSON:");
+    Serial.println(httpRequestData);
+
+    int httpResponseCode = http.POST(httpRequestData);
+
+    if (httpResponseCode > 0) {
+      Serial.printf("[TAREFA WEB] Resposta HTTP: %d\n", httpResponseCode);
+    } else {
+      Serial.printf("[TAREFA WEB] Falha na requisicao: %s\n", http.errorToString(httpResponseCode).c_str());
+    }
+    http.end();
+  } else {
+    Serial.println("[TAREFA WEB] Sem WiFi. Envio cancelado.");
   }
-}
-
-void printData(char* nutriente, float valor) {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    Serial.println("Falha ao obter a data e hora");
-    return;
-  }
-
-  Serial.printf("%-10d%-20s%-20.2f%-4d-%02d-%02d %02d:%02d:%02d  %-4d%-20s\n",
-                id_coleta++,
-                nutriente,
-                valor,
-                timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-                timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec,
-                releStatus, motivoAcionamento.isEmpty() ? "" : motivoAcionamento.c_str());
-}
-
-void callWs(ParametrosEnvio leituras[], int numLeituras){
-  //link do webservice
-  http.begin("https://newsfacd.herokuapp.com/journeybuilder/success"); 
-  http.addHeader("Content-Type", "application/json");
   
-  //formar arquivo json
-  StaticJsonDocument<1024> doc;
-  doc["sensor"] = "ESP32";
-
-  struct tm timeinfo;
-  if (getLocalTime(&timeinfo)) { // Supondo que getLocalTime() esteja definida e funcionando
-    char timestamp[64];
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
-    doc["timestamp"] = timestamp;
-  } else {
-    doc["timestamp"] = "N/A"; // Ou algum valor padrão se o tempo não estiver disponível
-  }
-
-  JsonArray arrayLeituras = doc.createNestedArray("leituras");
-
-  for (int i = 0; i < numLeituras; ++i) {
-    JsonObject leituraObj = arrayLeituras.createNestedObject();
-    leituraObj["item"] = leituras[i].getNutriente();
-    leituraObj["valor"] = leituras[i].getValor();
-  }
-
-  String httpRequestData;
-  serializeJson(doc, httpRequestData);
-
-  Serial.println("Enviando JSON para o WebService:");
-  Serial.println(httpRequestData);
-
-  int httpResponseCode = http.POST(httpRequestData);
-  if (httpResponseCode > 0) {
-    Serial.printf("Código de Resposta HTTP: %d\n", httpResponseCode);
-    String payload = http.getString();
-    Serial.println("Resposta: " + payload);
-  } else {
-    Serial.printf("Falha na requisição HTTP, erro: %s\n", http.errorToString(httpResponseCode).c_str());
-  }
+  delete dados;
+  vTaskDelete(NULL);
 }
-
-
-
