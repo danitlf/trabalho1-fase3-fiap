@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.models import Base, Sensor, Leitura
+from src.models import Base, Sensor, Leitura, Predict
 from src.schemas import *
 from sqlalchemy.orm import joinedload
 from src.predict import ModelPredicter
@@ -87,6 +87,14 @@ def previsao():
     return IsRainning.from_api(data)
 
 @app.post("/predict", response_model=PredictResponse)
-def prever(leituras : PredictCreate):
+def prever(leituras : PredictCreate, db: Session = Depends(get_db)):
     previsao = model_predicter.predict(leituras)
-    return {"pred": previsao}
+    db_predict = Predict(valor=int(previsao))
+    db.add(db_predict)
+    db.commit()
+    db.refresh(db_predict)
+    return {"pred": int(previsao)}
+
+@app.get("/predicts")
+def listar_predicoes(db: Session = Depends(get_db)):
+    return [predict.valor for predict in db.query(Predict).all()]

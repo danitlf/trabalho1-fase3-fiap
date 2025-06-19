@@ -45,8 +45,8 @@ class SensorRead(SensorBase):
     class Config:
         orm_mode = True
 
-class SensorCreate(SensorBase):
-    pass
+class SensorCreate(BaseModel):
+    nome: str
 
 class IsRainning(BaseModel):
     is_raining: bool
@@ -56,3 +56,6 @@ class IsRainning(BaseModel):
         return cls(
             is_raining=dados["current_weather"]["weathercode"] in weather_codes_chuvosos
         )
+
+class PredictsResponse(BaseModel):
+    pass
