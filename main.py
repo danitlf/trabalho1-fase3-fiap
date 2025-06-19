@@ -6,12 +6,13 @@ from sqlalchemy.orm import sessionmaker
 
 from src.models import Base, Sensor, Leitura
 from src.schemas import *
-import streamlit as st
-
+from sqlalchemy.orm import joinedload
+from src.predict import ModelPredicter
 
 import requests
 
 DATABASE_URL = "sqlite:///./banco.db"
+model_predicter = ModelPredicter()
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
@@ -71,6 +72,10 @@ def criar_leitura(leitura: LeituraCreate, db: Session = Depends(get_db)):
 def listar_leituras(sensor_id: int, db: Session = Depends(get_db)):
     return db.query(Leitura).filter(Leitura.sensor_id == sensor_id).all()
 
+@app.get("/leituras", response_model=List[LeituraRead])
+def listar_todas_leituras(db: Session = Depends(get_db)):
+    return db.query(Leitura).options(joinedload(Leitura.sensor)).order_by(Leitura.timestamp.desc()).all()
+
 @app.get("/sensores/{sensor_id}", response_model=SensorRead)
 def buscar_sensor(sensor_id: int, db: Session = Depends(get_db)):
     return db.query(Sensor).filter(Sensor.id == sensor_id).first()
@@ -81,11 +86,7 @@ def previsao():
     data = response.json()
     return IsRainning.from_api(data)
 
-@st.cache_data(ttl=10)          # auto-refresh a cada 10 s
-def load_data(n_linhas=5000):
-    df = pd.read_sql(
-        "SELECT * FROM leituras ORDER BY ts DESC LIMIT ?",
-        get_db(), params=(n_linhas,)
-    )
-    return df
-
+@app.post("/predict", response_model=PredictResponse)
+def prever(leituras : PredictCreate):
+    previsao = model_predicter.predict(leituras)
+    return {"pred": previsao}
