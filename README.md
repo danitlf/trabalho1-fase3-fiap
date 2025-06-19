@@ -7,12 +7,14 @@
 <br>
 
 # Nome do projeto
+
 Previsão de Falhas em Equipamentos Industriais com Sensores e IA
 
 ## Nome do grupo
+
 Rumo ao NEXT!
 
-## 👨‍🎓 Integrantes: 
+## 👨‍🎓 Integrantes:
 
 - Felipe Livino dos Santos (RM 563187)
 - Daniel Veiga Rodrigues de Faria (RM 561410)
@@ -43,12 +45,12 @@ As leituras coletadas são persistidas em um banco de dados, que registra o sens
 
 Por fim, Este projeto simula e exibe dados de sensores em tempo real. Ele é composto por uma API desenvolvida com FastAPI, que gerencia sensores e leituras armazenadas em um banco SQLite. Um simulador cria automaticamente os sensores (caso não existam) e envia leituras continuamente. Para a visualização, foi criado um dashboard em Streamlit que exibe os dados em tempo real de forma simples e interativa.
 
-  ## 🔌 1. Simulador de Circuito – Wokwi (ESP32)
+## 🔌 1. Simulador de Circuito – Wokwi (ESP32)
 
 - **Conecta-se ao WiFi** automaticamente (`Wokwi-GUEST`).
-- **Envio Web**  
-   - Forma JSON com campos `sensor`, `item`, `valor`, `timestamp`.  
-   - Envia via HTTP POST e exibe código de resposta.
+- **Envio Web**
+  - Forma JSON com campos `sensor`, `item`, `valor`, `timestamp`.
+  - Envia via HTTP POST e exibe código de resposta.
 - **Configura sensores e atuadores**:
   - **Sensor DHT22** (temperatura e umidade).
   - **LDR** (simula valor de pH com inversão).
@@ -64,25 +66,93 @@ Por fim, Este projeto simula e exibe dados de sensores em tempo real. Ele é com
 - **Envia os dados coletados em JSON para uma API externa**.
 - Também imprime no terminal serial os dados com timestamp formatado.
 
+- **Exibe os dados no display LCD I2C**.
+- Exibe informações do PH, Temperatura, Umidade, Potássio e Fósforo, além de caso o Rele ser ligado exibe menssagem de alerta.
+
   ## Resumo do Circuito
-- **DHT22** — pino 19; use resistor de pull-up de 10 kΩ entre DATA e 3 V3.  
-- **LDR** — pino 34 (ADC1_CH6); formar divisor com resistor de 10 kΩ.  
-- **Botão “Fósforo”** — pino 23; configurado como `INPUT_PULLUP`.  
-- **Botão “Potássio”** — pino 22; configurado como `INPUT_PULLUP`.  
-- **Relé da bomba** — pino 12; nível alto liga a bomba.  
-- **Alimentação** — ESP32 DevKit v1 alimentado por 5 V USB; GND comum entre todos os componentes.
+
+- **LCD I2C** - pino 21/22; Exibir informações dos sensores.
+- **DHT22** — pino 19; use resistor de pull-up de 10 kΩ entre DATA e 3 V3.
+- **LDR** — pino 34 (ADC1_CH6); formar divisor com resistor de 10 kΩ.
+- **Botão “Fósforo”** — pino 23; configurado como `INPUT_PULLUP`.
+- **Botão “Potássio”** — pino 22; configurado como `INPUT_PULLUP`.
+- **Relé da bomba** — pino 12; nível alto liga a bomba.
+- **Alimentação** — ESP32 DevKit v1 alimentado por 3V e 5V USB;
 
 ## Arquitetura do circuito feito no worki.com
 
 <image src="assets/circuito.png" alt="Circuito do projeto" width="100%" height="100%">
 
+## Serial plotter
+
+<image src="assets/serial_plotter.png" alt="Serial Plotter" width="100%" height="100%">
+
+## ✨ Melhorias Implementadas: Comparativo das Versões
+
+### 1. Arquitetura: Síncrona vs. Multitarefa (RTOS)
+
+- **Código Antigo:** Utilizava um modelo de execução síncrono. A função `callWs()` era chamada diretamente no `loop()`. Durante o envio dos dados via HTTP, todo o programa ficava **bloqueado**, aguardando a resposta do servidor. Isso significava que, por vários segundos, o ESP32 não conseguia ler sensores, verificar botões ou atualizar seu estado.
+
+- **Código Novo:** Adota uma arquitetura multitarefa usando o **FreeRTOS** (o sistema operacional de tempo real integrado ao ESP32). A comunicação com o Web Service é delegada a uma tarefa separada (`tarefaEnvioWebService`).
+
+- **🚀 Vantagem:** A aplicação se tornou **não-bloqueante e mais responsiva**. O `loop()` principal continua executando e lendo os sensores em intervalos regulares, enquanto a tarefa de envio de dados roda em paralelo. Se a rede estiver lenta, isso não afetará a capacidade do dispositivo de monitorar o ambiente em tempo real.
+
+### 2. Gerenciamento da Conexão WiFi
+
+- **Código Antigo:** A conexão WiFi era tratada de forma muito simples. O código tentava se conectar uma única vez na função `setup()` dentro de um laço `while`. Se a conexão caísse durante a execução, não havia nenhum mecanismo para tentar reconectar, e a chamada HTTP falharia.
+
+- **Código Novo:** Implementa um sistema de gerenciamento de conexão assíncrono.
+
+  - `WiFi.onEvent(WiFiEvent)`: Usa o sistema de eventos do WiFi para reagir instantaneamente a desconexões.
+  - `TimerHandle_t wifiReconnectTimer`: Cria um temporizador que tenta reconectar automaticamente em intervalos definidos (`RECONNECT_INTERVAL_MS`) apenas quando a conexão é perdida, sem travar o código.
+
+- **🌐 Vantagem:** O dispositivo se tornou mais **confiável e resiliente a falhas de rede**, garantindo maior tempo de atividade.
+
+### 3. Interface de Usuário e Feedback
+
+- **Código Antigo:** Todo o feedback era enviado via `Serial.print()`. Para inspecionar o estado do dispositivo.
+
+- **Código Novo:** Adiciona um display **LCD I2C** (`LiquidCrystal_I2C`) para feedback visual.
+
+- **🖥️ Vantagem:** Fornece feedback **visual, instantâneo e local** ao usuário. É possível ver o status da conexão WiFi, o endereço IP, leituras de sensores e o status do relé diretamente no dispositivo, tornando-o mais completo e independente.
+
+---
+
+### 4. Organização e Legibilidade do Código
+
+- **Código Antigo:** Usava variáveis com nomes genéricos (ex: `ldrPino`, `dhtPino`) e misturava a lógica de coleta e envio de dados. A classe `ParametrosEnvio` era verbosa para um simples contêiner de dados.
+
+- **Código Novo:** O código foi reestruturado para ser mais limpo e organizado.
+
+  - **`#define`**: Todas as constantes (pinos, intervalos, configurações) foram centralizadas no topo do arquivo, facilitando a configuração.
+  - **Protótipos de Funções**: As funções são declaradas no início, melhorando a estrutura geral.
+  - **Nomenclatura**: Utiliza nomes mais claros e padronizados (ex: `BOTAO_FOSFORO_PINO`, `INTERVALO_COLETA_MS`).
+  - **Estrutura de Dados**: Substitui a classe `ParametrosEnvio` por uma `struct SensorDataPayload`, que é mais leve e eficiente para agrupar dados.
+
+- **🧹 Vantagem:** O código é **mais fácil de ler e escalar**.
+
+---
+
+### 5. Eficiência e Gerenciamento de Memória
+
+- **Código Antigo:** Usava o tipo `float` para as leituras e a classe `String` para `motivoAcionamento`. O uso excessivo da classe `String` pode levar à fragmentação da memória (heap) em execuções de longa duração.
+
+- **Código Novo:** Emprega técnicas de otimização para performance e estabilidade.
+
+  - **Matemática de Ponto Fixo**: Armazena valores de sensores como inteiros (`int16_t`), multiplicados por 10 (ex: `temperatura_x10`). Cálculos com inteiros são muito mais rápidos que com ponto flutuante (`float`). Os valores são convertidos para `float` apenas no momento de criar o JSON.
+  - **Alocação Dinâmica Controlada**: Aloca o payload dinamicamente (`new SensorDataPayload`) e o libera (`delete payload`) ao final da tarefa de envio. A vida útil do dado está contida de forma segura dentro da tarefa, evitando estouro de memória.
+  - **JSON Seguro**: Limita o tamanho do buffer para a serialização do JSON (`char httpRequestData[JSON_DOC_SIZE]`), prevenindo estouros de buffer.
+
+- **⚡ Vantagem:** **Maior performance computacional, menor consumo de memória e maior estabilidade** para operação contínua por longos períodos.
+
 ## 🚀 2. API – FastAPI
 
 **API REST** (`main.py`)
-   - **POST /readings:** armazena nova leitura.
-   - **GET /readings:** lista todas as leituras.
-   - **PUT /readings/<id>:** atualiza leitura.
-   - **DELETE /readings/<id>:** remove leitura.
+
+- **POST /readings:** armazena nova leitura.
+- **GET /readings:** lista todas as leituras.
+- **PUT /readings/<id>:** atualiza leitura.
+- **DELETE /readings/<id>:** remove leitura.
 
 - A API está implementada no arquivo `main.py`, e utiliza os arquivos `models.py` e `schemas.py` (dentro da pasta `src/`) para estruturar os dados e validações.
 - Ela gerencia duas entidades principais:
@@ -97,9 +167,10 @@ Por fim, Este projeto simula e exibe dados de sensores em tempo real. Ele é com
 - Quando o simulador é iniciado, **ele verifica se os sensores já existem no banco de dados**:
   - Se **não existirem**, ele os **cria automaticamente** usando uma função dedicada.
 - Em seguida, entra em um loop `while True`:
+
   - Envia leituras simuladas para cada sensor periodicamente.
   - Isso permite alimentar o banco de dados com dados "em tempo real".
- 
+
   ## 📊 3. Dashboard – Visualização com Streamlit
 
 - O dashboard está no arquivo `dashboard.py`.
@@ -112,13 +183,13 @@ Por fim, Este projeto simula e exibe dados de sensores em tempo real. Ele é com
 
 <image src="assets/sistema.png" alt="Fluxo de dados" width="100%" height="100%">
 
-
 ## 📁 Estrutura de pastas
+
 ```
 trabalho1-fase3-fiap/
 ├── assets/                      # Pasta para imagens e arquivos de mídia
 │
-├── simulator/                   
+├── simulator/
 │   └── simulator.py             # Simulador: cria os sensores e gera valores continuos para abastecer o banco de dados
 │
 ├── src/                         # Código da API FastAPI
@@ -141,56 +212,68 @@ trabalho1-fase3-fiap/
 
 ```
 
-
 ## 🔧 Como executar o código
+
 Para executar o código deste projeto, siga os passos abaixo:
 
 Pré-requisitos:
+
 - Python 3.8+ instalado
 - Virtualenv
+
 ```
   pip install virtualenv
 ```
 
 1. Clone o repositório
+
 - A pasta `wokwi/` contém os arquivos do circuito virtual que simula um **ESP32** com sensores conectados.
 - O circuito pode ser simulado diretamente no site [https://wokwi.com](https://wokwi.com), bastando importar os arquivos presente na pasta `/worki`:
 
 -Certifique-se de que o ESP32 esteja conectado ao WiFi (Wokwi-GUEST)
 
 O sketch irá:
+
 - Coletar dados dos sensores (DHT, LDR, botões)
 - Acionar o relé com base em condições
-- Enviar os dados via HTTP para o WebService 
+- Enviar os dados via HTTP para o WebService
 
 2. Crie e ative o ambiente virtual
+
 ```
 virtualenv my-env
 source my-env/bin/activate    # No Windows: my-env\Scripts\activate
 ```
 
 3. Instalar dependências do projeto
+
 ```
 pip install -r requirements.txt
 ```
+
 4. Banco de Dados
-O projeto utiliza SQLite.
+   O projeto utiliza SQLite.
+
 - Certifique-se de que o arquivo banco.db esteja na raiz do projeto.
 - Ele já deve conter as tabelas necessárias para sensores e leituras.
 
 5. Execute os componentes do sistema com os comandos presentes no `Makefile`
-▶️ API (FastAPI)
+   ▶️ API (FastAPI)
+
 ```
 uvicorn main:app --reload
 ```
+
 - Isso iniciará a API na URL: http://127.0.0.1:8000/docs
 
 ▶️ Simulador de Sensores
+
 ```
 python simulator/simulator.py
 ```
 
 ▶️ Dashboard (Streamlit)
+
 ```
 streamlit run dashboard.py
 ```

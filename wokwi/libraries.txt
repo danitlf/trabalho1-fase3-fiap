@@ -6,3 +6,4 @@ DHT sensor library
 
 HttpClient
 ArduinoJson
+LiquidCrystal I2C
