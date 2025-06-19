@@ -22,3 +22,10 @@ class Leitura(Base):
 
     sensor_id = Column(Integer, ForeignKey('sensores.id'))
     sensor = relationship("Sensor", back_populates="leituras")
+
+class Predict(Base):
+    __tablename__ = 'predicts'
+
+    id = Column(Integer, primary_key=True, index=True)
+    valor = Column(Integer, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow)

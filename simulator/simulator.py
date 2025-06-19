@@ -57,8 +57,8 @@ while True:
 
         print(f"Valor sensor {sensor['nome']}: {valor}")
         
-        # response = requests.post(f"http://localhost:8000/leituras/", json={"valor": valor, "sensor_id": sensor['id']})
-        # print(response.json())
+        response = requests.post(f"http://localhost:8000/leituras/", json={"valor": valor, "sensor_id": sensor['id']})
+        print(response.json())
         valores_sensores[sensor['nome']] = valor
 
     #prever
