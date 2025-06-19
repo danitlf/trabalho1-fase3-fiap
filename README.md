@@ -83,6 +83,10 @@ Por fim, Este projeto simula e exibe dados de sensores em tempo real. Ele é com
 
 <image src="assets/circuito.png" alt="Circuito do projeto" width="100%" height="100%">
 
+## Serial plotter
+
+<image src="assets/serial_plotter.png" alt="Serial Plotter" width="100%" height="100%">
+
 ## ✨ Melhorias Implementadas: Comparativo das Versões
 
 ### 1. Arquitetura: Síncrona vs. Multitarefa (RTOS)
